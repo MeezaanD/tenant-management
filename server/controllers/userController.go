@@ -83,7 +83,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
 
-	// Query the user by email and password
 	row := database.DB.QueryRow("SELECT * FROM users WHERE email = ? AND password = ?", user.Email, user.Password)
 
 	if err := row.Scan(&user.UserID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.UserRole, &user.JoinedDate); err != nil {
@@ -94,10 +93,13 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	// Create JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.UserID,
-		"email":  user.Email,
-		"role":   user.UserRole,
-		"exp":    time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
+		"userID":     user.UserID,
+		"firstname":  user.FirstName,
+		"lastname":   user.LastName,
+		"email":      user.Email,
+		"userRole":   user.UserRole,
+		"joinedDate": user.JoinedDate,
+		"exp":        time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
 	})
 
 	// Sign the token with a secret key
@@ -107,7 +109,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with the token and success message
 	response := map[string]interface{}{
 		"message": "Login successful",
 		"token":   tokenString,
@@ -136,8 +137,11 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = database.DB.Exec("UPDATE users SET firstname=?, lastname=?, email=?, user_role=? WHERE user_id=?", user.FirstName, user.LastName, user.Email, user.UserRole, userID)
+	_, err = database.DB.Exec("UPDATE users SET firstname=?, lastname=?, email=?, userRole=? WHERE user_id=?", 
+		user.FirstName, user.LastName, user.Email, user.UserRole, userID)
+
 	if err != nil {
+		log.Printf("Error updating user with ID %s: %v", userID, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to update user"})
 		return
