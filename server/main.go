@@ -9,6 +9,7 @@ import (
 	"tenant-management/routes"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
 )
 
@@ -32,28 +33,28 @@ func main() {
 	database.Init()
 
 	router := mux.NewRouter()
-
-	// Set up routes for API
 	routes.SetupRoutes(router)
 
-	// Handle root URL by serving a dynamic HTML page
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := tmpl.Execute(w, nil); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Start the server on the port specified in the .env file
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "5000"  // Default to port 8080 if nothing is specified
+		port = "5000"
 	}
+	
+	corsOptions := handlers.AllowedOrigins([]string{"*"}) // Allow all origins for development
+	corsMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
+	corsHeaders := handlers.AllowedHeaders([]string{"Content-Type", "Authorization"})
+
 	log.Printf("Server started at port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Fatal(http.ListenAndServe(":"+port, handlers.CORS(corsOptions, corsMethods, corsHeaders)(router)))
 }

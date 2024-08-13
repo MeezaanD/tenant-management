@@ -125,43 +125,50 @@ func LogOutUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["userID"]
+	params := mux.Vars(r)
+	userID := params["userID"]
 
 	var user models.User
-	json.NewDecoder(r.Body).Decode(&user)
-
-	_, err := database.DB.Exec("UPDATE users SET firstname = ?, lastname = ?, email = ?, password = ?, userRole = ?, joinedDate = ? WHERE user_id = ?",
-		user.FirstName, user.LastName, user.Email, user.Password, user.UserRole, user.JoinedDate, userID)
-
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload"})
 		return
 	}
 
-	// Respond with a success message
-	response := map[string]interface{}{
-		"message": "User updated successfully",
-		"user":    user,
+	_, err = database.DB.Exec("UPDATE users SET firstname=?, lastname=?, email=?, user_role=? WHERE user_id=?", user.FirstName, user.LastName, user.Email, user.UserRole, userID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to update user"})
+		return
 	}
-	json.NewEncoder(w).Encode(response)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User updated successfully"})
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID := vars["userID"]
+	params := mux.Vars(r)
+	userID := params["userID"]
 
 	_, err := database.DB.Exec("DELETE FROM users WHERE user_id = ?", userID)
-
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if err.Error() == "Error 1451: Cannot delete or update a parent row: a foreign key constraint fails" {
+			log.Printf("Cannot delete user %s: associated payments exist", userID) 
+			w.WriteHeader(http.StatusConflict)                                     
+			json.NewEncoder(w).Encode(map[string]string{"error": "Cannot delete user with associated payments"})
+			return
+		}
+
+		// Log the exact error for debugging
+		log.Printf("Error deleting user %s: %v", userID, err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to delete user"})
 		return
 	}
 
-	// Respond with a success message
-	response := map[string]interface{}{
-		"message": "User deleted successfully",
-		"userID":  userID,
-	}
-	json.NewEncoder(w).Encode(response)
+	// Successfully deleted the user
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
 }
