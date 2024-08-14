@@ -13,7 +13,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Define a template directly in the code
 var tmpl = template.Must(template.New("index").Parse(`
 <!DOCTYPE html>
 <html lang="en">
@@ -51,7 +50,7 @@ func main() {
 		port = "5000"
 	}
 	
-	corsOptions := handlers.AllowedOrigins([]string{"*"}) // Allow all origins for development
+	corsOptions := handlers.AllowedOrigins([]string{"*"})
 	corsMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	corsHeaders := handlers.AllowedHeaders([]string{"Content-Type", "Authorization"})
 

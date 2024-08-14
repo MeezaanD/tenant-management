@@ -10,7 +10,12 @@ import (
 )
 
 func GetAllPayments(w http.ResponseWriter, r *http.Request) {
-	rows, err := database.DB.Query("SELECT * FROM payments")
+	rows, err := database.DB.Query(`
+		SELECT p.payment_id, p.user_id, u.firstname, p.agreed_amount, p.paid_amount, 
+		       p.remaining_amount, p.proof_of_payment, p.paid_ontime
+		FROM payments p
+		LEFT JOIN users u ON p.user_id = u.user_id
+	`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -20,14 +25,13 @@ func GetAllPayments(w http.ResponseWriter, r *http.Request) {
 	var payments []models.Payment
 	for rows.Next() {
 		var payment models.Payment
-		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
+		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		payments = append(payments, payment)
 	}
 
-	// Respond with all payments
 	response := map[string]interface{}{
 		"message":  "All payments retrieved successfully",
 		"payments": payments,
@@ -36,7 +40,16 @@ func GetAllPayments(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPaymentsByUsers(w http.ResponseWriter, r *http.Request) {
-	rows, err := database.DB.Query("SELECT * FROM payments")
+	params := mux.Vars(r)
+	userID := params["userID"]
+
+	rows, err := database.DB.Query(`
+		SELECT p.payment_id, p.user_id, u.firstname, p.agreed_amount, p.paid_amount, 
+		       p.remaining_amount, p.proof_of_payment, p.paid_ontime
+		FROM payments p
+		LEFT JOIN users u ON p.user_id = u.user_id
+		WHERE p.user_id = ?
+	`, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -46,7 +59,7 @@ func GetPaymentsByUsers(w http.ResponseWriter, r *http.Request) {
 	var payments []models.Payment
 	for rows.Next() {
 		var payment models.Payment
-		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
+		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -78,7 +91,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	var payment models.Payment
 	json.NewDecoder(r.Body).Decode(&payment)
 
-	// Check if the user_id exists in the users table
 	var userExists bool
 	err := database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID).Scan(&userExists)
 
@@ -95,7 +107,6 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with a success message
 	response := map[string]interface{}{
 		"message": "Payment created successfully",
 		"payment": payment,
@@ -104,40 +115,47 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePayment(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	paymentID := params["paymentID"]
+
 	var payment models.Payment
-	json.NewDecoder(r.Body).Decode(&payment)
 
-	_, err := database.DB.Exec("UPDATE payments SET user_id = ?, agreed_amount = ?, paid_amount = ?, remaining_amount = ?, proof_of_payment = ?, paid_ontime = ? WHERE payment_id = ?",
-		payment.UserID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime, payment.PaymentID)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Respond with a success message
+	_, err := database.DB.Exec("UPDATE payments SET user_id = ?, agreed_amount = ?, paid_amount = ?, remaining_amount = ?, proof_of_payment = ?, paid_ontime = ? WHERE payment_id = ?",
+		payment.UserID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime, paymentID)
+
+	if err != nil {
+		http.Error(w, "Failed to update payment", http.StatusInternalServerError)
+		return
+	}
+
 	response := map[string]interface{}{
 		"message": "Payment updated successfully",
 		"payment": payment,
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
 func DeletePayment(w http.ResponseWriter, r *http.Request) {
-	var payment models.Payment
-	json.NewDecoder(r.Body).Decode(&payment)
+	params := mux.Vars(r)
+	paymentID := params["paymentID"]
 
-	_, err := database.DB.Exec("DELETE FROM payments WHERE payment_id = ?", payment.PaymentID)
+	_, err := database.DB.Exec("DELETE FROM payments WHERE payment_id = ?", paymentID)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Respond with a success message
 	response := map[string]interface{}{
-		"message": "Payment deleted successfully",
-		"payment": payment,
+		"message":    "Payment deleted successfully",
+		"payment_id": paymentID,
 	}
 	json.NewEncoder(w).Encode(response)
 }

@@ -61,7 +61,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
 
-	// Insert the user into the database
 	_, err := database.DB.Exec("INSERT INTO users (firstname, lastname, email, password, userRole, joinedDate) VALUES (?, ?, ?, ?, ?, ?)",
 		user.FirstName, user.LastName, user.Email, user.Password, user.UserRole, user.JoinedDate)
 
@@ -70,7 +69,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with a success message and user details
 	response := map[string]interface{}{
 		"message": "User created successfully",
 		"user":    user,
@@ -102,7 +100,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		"exp":        time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
 	})
 
-	// Sign the token with a secret key
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		http.Error(w, "Could not create token", http.StatusInternalServerError)
@@ -117,8 +114,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func LogOutUser(w http.ResponseWriter, r *http.Request) {
-	// For JWT-based authentication, logout can simply be a client-side action where the token is discarded.
-	// Respond with a success message
 	response := map[string]interface{}{
 		"message": "Logout successful",
 	}
@@ -164,7 +159,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Log the exact error for debugging
 		log.Printf("Error deleting user %s: %v", userID, err)
 
 		w.WriteHeader(http.StatusInternalServerError)
@@ -172,7 +166,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Successfully deleted the user
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "User deleted successfully"})
 }

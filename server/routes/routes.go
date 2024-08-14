@@ -20,6 +20,7 @@ func SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/user/{userID}/payments", controllers.GetPaymentsByUsers).Methods("GET")
 	router.HandleFunc("/user/{userID}/payment/{paymentID}", controllers.GetPayment).Methods("GET")
 	router.HandleFunc("/user/{userID}/payments", controllers.CreatePayment).Methods("POST")
-	router.HandleFunc("/user/{userID}/payment/{paymentID}", controllers.UpdatePayment).Methods("PUT")
-	router.HandleFunc("/user/{userID}/payment/{paymentID}", controllers.DeletePayment).Methods("DELETE")
+	router.HandleFunc("/payment/{paymentID}", controllers.UpdatePayment).Methods("PUT")
+	router.HandleFunc("/payment/{paymentID}", controllers.DeletePayment).Methods("DELETE")
+
 }
