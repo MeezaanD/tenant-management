@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./server
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: "bcmisi6istbz37tgftlz-mysql.services.clever-cloud.com"
+      DB_PORT: "3306"
+      DB_USER: "ujhzbu0fizdh4wfo"
+      DB_PASS: "T5KX0rWzIN9zoNDcz7gk"
+      DB_NAME: "bcmisi6istbz37tgftlz"
+      PORT: "5000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: "T5KX0rWzIN9zoNDcz7gk"
+      MYSQL_DATABASE: "bcmisi6istbz37tgftlz"
+      MYSQL_USER: "ujhzbu0fizdh4wfo"
+      MYSQL_PASSWORD: "T5KX0rWzIN9zoNDcz7gk"
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
