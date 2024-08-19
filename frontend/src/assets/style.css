@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+:root {
+	--primary-color: #9381ff;
+	--secondary-color: #e0e7ff;
+	--light-color: #f8f7ff;
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	font-family: "Open Sans", sans-serif;
+}
+
+
+/* <uniquifier>: Use a unique and descriptive class name
+<weight>: Use a value from 300 to 800
+
+.open-sans-<uniquifier> {
+	font-family: "Open Sans", sans-serif;
+	font-optical-sizing: auto;
+	font-weight: <weight>;
+	font-style: normal;
+	font-variation-settings:
+		"wdth" 100;
+} */
+
+
+
+.el-container {
+	width: 100%;
+	padding: 20px;
+	background-color: #fff;
+	box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+	border-radius: 10px;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background-color: var(--primary-color);
+	color: #fff;
+	padding: 10px 20px;
+	border-radius: 10px;
+	margin-bottom: 20px;
+}
+
+.form {
+	min-height: 30vh;
+	margin-bottom: 20px;
+}
