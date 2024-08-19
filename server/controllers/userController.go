@@ -79,25 +79,32 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func LoginUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
+	var storedUser models.User
 	json.NewDecoder(r.Body).Decode(&user)
 
-	row := database.DB.QueryRow("SELECT * FROM users WHERE email = ? AND password = ?", user.Email, user.Password)
+	row := database.DB.QueryRow("SELECT * FROM users WHERE email = ?", user.Email)
+	err := row.Scan(&storedUser.UserID, &storedUser.FirstName, &storedUser.LastName, &storedUser.Email, &storedUser.Password, &storedUser.UserRole, &storedUser.JoinedDate)
 
-	if err := row.Scan(&user.UserID, &user.FirstName, &user.LastName, &user.Email, &user.Password, &user.UserRole, &user.JoinedDate); err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
 		log.Println("User not found")
 		return
 	}
 
-	// Create JWT token
+	if storedUser.Password != user.Password {
+		http.Error(w, "Incorrect password", http.StatusUnauthorized)
+		log.Println("Incorrect password")
+		return
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID":     user.UserID,
-		"firstname":  user.FirstName,
-		"lastname":   user.LastName,
-		"email":      user.Email,
-		"userRole":   user.UserRole,
-		"joinedDate": user.JoinedDate,
-		"exp":        time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
+		"userID":     storedUser.UserID,
+		"firstname":  storedUser.FirstName,
+		"lastname":   storedUser.LastName,
+		"email":      storedUser.Email,
+		"userRole":   storedUser.UserRole,
+		"joinedDate": storedUser.JoinedDate,
+		"exp":        time.Now().Add(time.Hour * 72).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
