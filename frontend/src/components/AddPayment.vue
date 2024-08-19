@@ -13,6 +13,9 @@
 			<el-form-item label="Paid On Time">
 				<el-switch v-model="newPayment.paid_ontime" />
 			</el-form-item>
+			<el-form-item label="Payment Date">
+				<el-date-picker v-model="newPayment.payment_date" type="date" placeholder="Select payment date" />
+			</el-form-item>
 		</el-form>
 		<template #footer>
 			<el-button @click="close">Cancel</el-button>
@@ -39,6 +42,7 @@ export default defineComponent({
 			paid_amount: 0,
 			proof_of_payment: '',
 			paid_ontime: false,
+			payment_date: '',
 		});
 
 		const token = localStorage.getItem('token');
@@ -64,18 +68,23 @@ export default defineComponent({
 			}
 
 			const remainingAmount = newPayment.value.agreed_amount - newPayment.value.paid_amount;
+			const payload = {
+				...newPayment.value,
+				remaining_amount: remainingAmount,
+				payment_date: newPayment.value.payment_date || new Date().toISOString().split('T')[0],
+			};
+
+			console.log('Payload:', payload); // Add this log to inspect the payload
 
 			try {
-				await ApiService.createPayment(userID, {
-					...newPayment.value,
-					remaining_amount: remainingAmount,
-				});
+				await ApiService.createPayment(userID, payload);
 				emit('save');
 				close();
 			} catch (error) {
 				console.error('Error saving payment:', error);
 			}
 		};
+
 
 		return {
 			newPayment,

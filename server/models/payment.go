@@ -9,4 +9,5 @@ type Payment struct {
 	RemainingAmount int    `json:"remaining_amount"`
 	ProofOfPayment  string `json:"proof_of_payment"`
 	PaidOnTime      bool   `json:"paid_ontime"`
+	PaymentDate     string `json:"payment_date"`
 }

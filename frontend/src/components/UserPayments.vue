@@ -19,6 +19,7 @@
 						</el-tag>
 					</template>
 				</el-table-column>
+				<el-table-column prop="payment_date" label="Payment Date" />
 				<el-table-column label="Actions" width="200">
 					<template v-slot="scope">
 						<el-button @click="confirmDeletePayment(scope.row.payment_id)" type="danger" size="small"
@@ -47,6 +48,7 @@ interface Payment {
 	remaining_amount: number;
 	proof_of_payment: string;
 	paid_ontime: boolean;
+	payment_date: string;
 }
 
 export default defineComponent({

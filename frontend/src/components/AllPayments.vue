@@ -57,6 +57,7 @@ interface Payment {
 	remaining_amount: number;
 	proof_of_payment: string;
 	paid_ontime: boolean;
+	payment_date: string;
 }
 
 interface User {
@@ -82,7 +83,8 @@ export default defineComponent({
 			{ label: 'Paid Amount', prop: 'paid_amount' },
 			{ label: 'Remaining Amount', prop: 'remaining_amount' },
 			{ label: 'Proof of Payment', prop: 'proof_of_payment' },
-			{ label: 'Paid On Time', prop: 'paid_ontime' }
+			{ label: 'Paid On Time', prop: 'paid_ontime' },
+			{ label: 'Payment Date', prop: 'payment_date' },
 		]);
 
 		// Load selected columns from localStorage or default to all columns

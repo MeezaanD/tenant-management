@@ -18,6 +18,9 @@
 			<el-form-item label="Paid On Time">
 				<el-switch v-model="paymentData.paid_ontime" />
 			</el-form-item>
+			<el-form-item label="Payment Date">
+				<el-date-picker v-model="paymentData.payment_date" type="date" placeholder="Select payment date" />
+			</el-form-item>
 		</el-form>
 		<template #footer>
 			<div class="dialog-footer">
@@ -38,6 +41,7 @@ interface Payment {
 	paid_amount: number;
 	proof_of_payment: string;
 	paid_ontime: boolean;
+	payment_date?: string;
 }
 
 interface User {
@@ -65,6 +69,7 @@ export default defineComponent({
 			paid_amount: 0,
 			proof_of_payment: '',
 			paid_ontime: false,
+			payment_date: ''
 		});
 
 		// Get user ID from token
@@ -80,7 +85,6 @@ export default defineComponent({
 		}
 
 		watch(() => props.visible, (newValue) => {
-			console.log('Dialog visibility (watcher):', newValue);
 			if (!newValue) {
 				paymentData.value = {
 					user_id: '',
@@ -88,6 +92,7 @@ export default defineComponent({
 					paid_amount: 0,
 					proof_of_payment: '',
 					paid_ontime: false,
+					payment_date: '',
 				};
 			}
 		});
@@ -102,12 +107,15 @@ export default defineComponent({
 				return;
 			}
 
+			const paymentDate = paymentData.value.payment_date || new Date().toISOString().split('T')[0];
+
 			const remainingAmount = paymentData.value.agreed_amount - paymentData.value.paid_amount;
 
 			try {
 				await ApiService.createPayment(userID, {
 					...paymentData.value,
 					remaining_amount: remainingAmount,
+					payment_date: paymentDate,
 				});
 				emit('save');
 				close();

@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"tenant-management/database"
 	"tenant-management/models"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -12,7 +14,7 @@ import (
 func GetAllPayments(w http.ResponseWriter, r *http.Request) {
 	rows, err := database.DB.Query(`
 		SELECT p.payment_id, p.user_id, u.firstname, p.agreed_amount, p.paid_amount, 
-		       p.remaining_amount, p.proof_of_payment, p.paid_ontime
+		       p.remaining_amount, p.proof_of_payment, p.paid_ontime, p.payment_date
 		FROM payments p
 		LEFT JOIN users u ON p.user_id = u.user_id
 	`)
@@ -25,10 +27,16 @@ func GetAllPayments(w http.ResponseWriter, r *http.Request) {
 	var payments []models.Payment
 	for rows.Next() {
 		var payment models.Payment
-		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
+		var paymentDate []byte
+
+		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime, &paymentDate); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		// Convert []byte to string
+		payment.PaymentDate = string(paymentDate)
+
 		payments = append(payments, payment)
 	}
 
@@ -45,7 +53,7 @@ func GetPaymentsByUsers(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := database.DB.Query(`
 		SELECT p.payment_id, p.user_id, u.firstname, p.agreed_amount, p.paid_amount, 
-		       p.remaining_amount, p.proof_of_payment, p.paid_ontime
+		       p.remaining_amount, p.proof_of_payment, p.paid_ontime, p.payment_date
 		FROM payments p
 		LEFT JOIN users u ON p.user_id = u.user_id
 		WHERE p.user_id = ?
@@ -59,10 +67,16 @@ func GetPaymentsByUsers(w http.ResponseWriter, r *http.Request) {
 	var payments []models.Payment
 	for rows.Next() {
 		var payment models.Payment
-		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime); err != nil {
+		var paymentDate []byte
+
+		if err := rows.Scan(&payment.PaymentID, &payment.UserID, &payment.FirstName, &payment.AgreedAmount, &payment.PaidAmount, &payment.RemainingAmount, &payment.ProofOfPayment, &payment.PaidOnTime, &paymentDate); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		// Convert []byte to string
+		payment.PaymentDate = string(paymentDate)
+
 		payments = append(payments, payment)
 	}
 
@@ -89,20 +103,39 @@ func CreatePayment(w http.ResponseWriter, r *http.Request) {
 	userID := params["userID"]
 
 	var payment models.Payment
-	json.NewDecoder(r.Body).Decode(&payment)
+	err := json.NewDecoder(r.Body).Decode(&payment)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Received payment data: %+v", payment)
 
 	var userExists bool
-	err := database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID).Scan(&userExists)
+	err = database.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", userID).Scan(&userExists)
 
 	if err != nil || !userExists {
 		http.Error(w, "User ID does not exist", http.StatusBadRequest)
 		return
 	}
 
-	_, err = database.DB.Exec("INSERT INTO payments (user_id, agreed_amount, paid_amount, remaining_amount, proof_of_payment, paid_ontime) VALUES (?, ?, ?, ?, ?, ?)",
-		userID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime)
+	log.Printf("User ID exists: %v", userExists)
+
+	if payment.PaymentDate != "" {
+		parsedDate, err := time.Parse(time.RFC3339, payment.PaymentDate)
+		if err != nil {
+			log.Printf("Error parsing date: %v", err)
+			http.Error(w, "Invalid date format", http.StatusBadRequest)
+			return
+		}
+		payment.PaymentDate = parsedDate.Format("2006-01-02")
+	}
+
+	_, err = database.DB.Exec("INSERT INTO payments (user_id, agreed_amount, paid_amount, remaining_amount, proof_of_payment, paid_ontime, payment_date) VALUES (?, ?, ?, ?, ?, ?, IFNULL(?, CURRENT_DATE))",
+		userID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime, payment.PaymentDate)
 
 	if err != nil {
+		log.Printf("Error inserting payment: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -125,8 +158,15 @@ func UpdatePayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := database.DB.Exec("UPDATE payments SET user_id = ?, agreed_amount = ?, paid_amount = ?, remaining_amount = ?, proof_of_payment = ?, paid_ontime = ? WHERE payment_id = ?",
-		payment.UserID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime, paymentID)
+	if payment.PaymentDate == "" {
+		currentDate := time.Now().Format("2006-01-02")
+		payment.PaymentDate = currentDate
+	}
+
+	_, err := database.DB.Exec(
+		"UPDATE payments SET user_id = ?, agreed_amount = ?, paid_amount = ?, remaining_amount = ?, proof_of_payment = ?, paid_ontime = ?, payment_date = ? WHERE payment_id = ?",
+		payment.UserID, payment.AgreedAmount, payment.PaidAmount, payment.RemainingAmount, payment.ProofOfPayment, payment.PaidOnTime, payment.PaymentDate, paymentID,
+	)
 
 	if err != nil {
 		http.Error(w, "Failed to update payment", http.StatusInternalServerError)
