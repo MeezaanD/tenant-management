@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   backend:
     build:
@@ -5,12 +7,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: "bcmisi6istbz37tgftlz-mysql.services.clever-cloud.com"
-      DB_PORT: "3306"
-      DB_USER: "ujhzbu0fizdh4wfo"
-      DB_PASS: "T5KX0rWzIN9zoNDcz7gk"
-      DB_NAME: "bcmisi6istbz37tgftlz"
-      PORT: "5000"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      PORT: ${PORT}
     depends_on:
       - db
 
@@ -23,10 +25,10 @@ services:
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: "T5KX0rWzIN9zoNDcz7gk"
-      MYSQL_DATABASE: "bcmisi6istbz37tgftlz"
-      MYSQL_USER: "ujhzbu0fizdh4wfo"
-      MYSQL_PASSWORD: "T5KX0rWzIN9zoNDcz7gk"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
