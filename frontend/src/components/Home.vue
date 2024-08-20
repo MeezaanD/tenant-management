@@ -7,14 +7,14 @@
 		<el-card class="payment-card" shadow="hover">
 			<el-row>
 				<el-col :span="24">
-					<h2>Payments Still Due:</h2>
+					<h2>Payments Still Due</h2>
 				</el-col>
 				<el-col :span="24">
 					<div v-if="pendingPayments.length > 0">
 						<ul class="payment-list">
-							<li v-for="payment in pendingPayments" :key="payment.payment_id">
-								<strong>{{ payment.firstname }} {{ payment.lastname }}:</strong>
-								Remaining amount: {{ payment.remaining_amount }}
+							<li v-for="payment in pendingPayments" :key="payment.payment_id" class="payment-item">
+								<div class="payment-name"><strong>Name:</strong> {{ payment.firstname }} {{ payment.lastname }}</div>
+								<div class="payment-amount"><strong>Remaining Amount:</strong> R{{ payment.remaining_amount }}</div>
 							</li>
 						</ul>
 					</div>
@@ -84,6 +84,7 @@ export default defineComponent({
 
 .payment-list {
 	list-style-type: none;
+	padding: 0;
 }
 
 .payment-list li {
@@ -92,6 +93,19 @@ export default defineComponent({
 	border: 1px solid #ccc;
 	border-radius: 8px;
 	background-color: #fff;
+	display: flex;
+	justify-content: space-between;
+}
+
+.payment-name {
+	flex: 1;
+}
+
+.payment-amount {
+	flex: 1;
+	text-align: start;
+	max-width: 15rem;
+	width: 100%;
 }
 
 .el-row {
