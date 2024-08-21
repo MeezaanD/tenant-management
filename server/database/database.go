@@ -15,7 +15,7 @@ var DB *sql.DB
 func Init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env file (DATABASE)")
 	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
