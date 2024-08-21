@@ -13,11 +13,16 @@ import (
 var DB *sql.DB
 
 func Init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file (DATABASE)")
+	// Load .env file only if the environment is not production
+	env := os.Getenv("ENV")
+	if env != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("No .env file found, proceeding with system environment variables")
+		}
 	}
 
+	// Construct the DSN (Data Source Name) for the MySQL connection
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASS"),
@@ -26,10 +31,12 @@ func Init() {
 		os.Getenv("DB_NAME"),
 	)
 
+	// Open a connection to the MySQL database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to connect to the database:", err)
 	}
 
+	// Assign the database connection to the global DB variable
 	DB = db
 }
