@@ -57,7 +57,7 @@
 				<p><el-icon><user /></el-icon>{{ userEmail }}</p>
 			</div>
 			<div v-else>
-				<el-button type="secondary" @click="redirectToLogin">Login</el-button>
+				<el-button type="primary" @click="redirectToLogin">Login</el-button>
 			</div>
 		</div>
 	</div>
