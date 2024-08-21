@@ -8,8 +8,8 @@ import (
 	"tenant-management/database"
 	"tenant-management/routes"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -29,31 +29,41 @@ var tmpl = template.Must(template.New("index").Parse(`
 `))
 
 func main() {
+	// Load .env file only if the environment is not production
+	env := os.Getenv("ENV")
+	if env != "production" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("No .env file found, proceeding with system environment variables")
+		}
+	}
+
+	// Initialize the database connection
 	database.Init()
 
+	// Set up the router and routes
 	router := mux.NewRouter()
 	routes.SetupRoutes(router)
 
+	// Define a basic welcome route
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if err := tmpl.Execute(w, nil); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
+	// Get the port from environment variables
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
 	}
-	
+
+	// Set up CORS options
 	corsOptions := handlers.AllowedOrigins([]string{"*"})
 	corsMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	corsHeaders := handlers.AllowedHeaders([]string{"Content-Type", "Authorization"})
 
+	// Start the server
 	log.Printf("Server started at port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, handlers.CORS(corsOptions, corsMethods, corsHeaders)(router)))
 }
