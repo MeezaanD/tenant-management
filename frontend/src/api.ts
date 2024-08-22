@@ -168,4 +168,4 @@ class ApiService {
 	}
 }
 
-export default new ApiService('http://localhost:5000');
+export default new ApiService('https://tenant-management.onrender.com');
